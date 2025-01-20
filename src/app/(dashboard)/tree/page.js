@@ -36,7 +36,7 @@ const FlowchartVisualization = ({ data }) => {
   data.forEach((gateway, gatewayIndex) => {
     const gatewayId = `gateway-${gatewayIndex}`;
     const gatewayX = gatewayIndex * GATEWAY_X_SPACING;
-    const centerX = ((gateway.wtp_array.length - 1) * ROOT_X_SPACING + 150) / 2;
+    const centerX = ((gateway.wtp_array?.length - 1) * ROOT_X_SPACING + 150) / 2;
 
     nodes.push({
       id: gatewayId,
