@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
-import { io } from "socket.io-client"; // Import socket.io-client
+
+import { useEffect, useRef, useState } from "react";
 import DataTable from "@/components/data-table";
 import Navbar from "@/components/navbar";
 import Searchbar from "@/components/searchbar";
@@ -11,38 +11,51 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import Loader from "@/components/loader";
 
-// Connect to WebSocket
-const socket = io("ws://65.1.1.229:8080/");
-
 export default function ApproveUserPage() {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [data, setData] = useState([]); // Store OTP requests
+  const [data, setData] = useState([]);
+  const [socket, setSocket] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState("disconnected");
+  const socketRef = useRef(null); // Store the socket
 
   useEffect(() => {
-    // Listen for 'newOtpRequest' event and log data into the table
-    socket.on("newOtpRequest", (data) => {
-      console.log("OTP Approval Request:", data);
-      // Add the new OTP request data to the table
-      setData((prevData) => [
-        ...prevData,
-        {
-          phone: data.phone,
-          message: data.message,
-        },
-      ]);
-    });
+    // Only run on client
+    if (typeof window !== "undefined") {
+      const ws = new WebSocket("ws://65.1.1.229:8080");
 
-    // Cleanup on unmount
-    return () => {
-      socket.off("newOtpRequest");
-    };
+      ws.onopen = () => console.log("Connected");
+      ws.onmessage = (event) => {
+        try {
+          const receivedData = JSON.parse(event.data);
+          setData((prev) => [...prev, receivedData]);
+        } catch (error) {
+          console.error("Parsing error:", error);
+        }
+      };
+
+      ws.onerror = (error) => console.error("WebSocket Error:", error);
+      ws.onclose = () => console.log("Disconnected");
+
+      socketRef.current = ws;
+
+      return () => {
+        ws.close();
+      };
+    }
   }, []);
 
+  const approveOtpRequest = (phone) => {
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(
+        JSON.stringify({ event: "approveOtpRequest", phone })
+      );
+    }
+  };
   const filteredData = data.filter(
     (item) =>
-      item.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.message.toLowerCase().includes(searchQuery.toLowerCase())
+      item?.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item?.message?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const columns = [
@@ -70,17 +83,15 @@ export default function ApproveUserPage() {
     },
     {
       accessorKey: "phone",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Phone Number
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Phone Number
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => (
         <div className="lowercase">{row.getValue("phone")}</div>
       ),
@@ -99,20 +110,20 @@ export default function ApproveUserPage() {
         <div className="flex gap-2">
           <Button
             onClick={() => approveOtpRequest(row.original.phone)}
-            className="bg-green-500 hover:bg-green-600 text-white"
+            className="text-white"
           >
             Approve
+          </Button>
+          <Button
+            onClick={() => approveOtpRequest(row.original.phone)}
+            className="bg-red-600 text-white"
+          >
+            Reject
           </Button>
         </div>
       ),
     },
   ];
-
-  // Function to send approval message to the server
-  const approveOtpRequest = (phone) => {
-    const message = JSON.stringify({ event: "approveOtpRequest", phone });
-    socket.emit("message", message);
-  };
 
   return (
     <>
