@@ -7,9 +7,16 @@ import CouponBasedForm from "@/components/app-auth/couponBased";
 import SMSBasedForm from "@/components/app-auth/smsBased";
 import AllUserDataTable from "@/components/app-auth/all-user-table";
 import AllUsers from "@/components/app-auth/all-user";
+import ApproveUser from "@/components/app-auth/approve-user";
 
 export default function Auth() {
-  const tabs = ["Guest Users", "Auth Based", "Coupon Based", "SMS Based"];
+  const tabs = [
+    "Guest Users",
+    "Auth Based",
+    "Coupon Based",
+    "SMS Based",
+    "Approve User",
+  ];
   const [activeTab, setActiveTab] = useState("Guest Users");
 
   const tabsContent = {
@@ -17,6 +24,7 @@ export default function Auth() {
     "Auth Based": <AuthBasedForm />,
     "Coupon Based": <CouponBasedForm />,
     "SMS Based": <SMSBasedForm />,
+    "Approve User": <ApproveUser />,
   };
 
   return (
@@ -26,7 +34,7 @@ export default function Auth() {
       <div className="min-h-screen flex flex-col p-6">
         {/* Navbar for Tab Controls */}
         <ToggleNav
-          className="pb-6"
+          className="mb-6 bg-white bg-opacity-5 rounded-md"
           tabs={tabs}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
