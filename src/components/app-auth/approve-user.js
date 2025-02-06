@@ -59,12 +59,16 @@ export default function ApproveUser() {
 
       ws.onopen = () => {
         console.log("Connected to WebSocket server.");
-        socketRef.current.send(
-          JSON.stringify({
-            event: "adminConnect",
-            deviceId: selectedDevice,
-          })
-        );
+        if (socketRef.current?.readyState === WebSocket.OPEN) {
+          console.log("Inside socket", selectedDevice);
+
+          socketRef.current.send(
+            JSON.stringify({
+              event: "adminConnect",
+              deviceId: selectedDevice,
+            })
+          );
+        }
       };
 
       ws.onmessage = (event) => {
@@ -90,7 +94,7 @@ export default function ApproveUser() {
         ws.close();
       };
     }
-  }, []);
+  }, [selectedDevice]);
 
   const approveOtpRequest = (phone) => {
     if (socketRef.current?.readyState === WebSocket.OPEN) {
